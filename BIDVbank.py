@@ -87,9 +87,7 @@ class AutoDownloadBIDVbank:
             #button.click()
 
             #first login...
-            first_login_element = '/html/body/div/div[1]/div[2]/div/div[1]/div[3]/div[1]/div/div/div[1]/div/div[2]/a/span'
-            if self.loadCompleted(first_login_element,2000000):
-                self.clickElement('/html/body/div[1]/div[1]/div[2]/div/div[1]/div[3]/div[1]/div/div/div[1]/div/div[2]/a/span')
+            
                 
         except TimeoutException:
             print("Login TPbank timeout")
@@ -102,6 +100,11 @@ class AutoDownloadBIDVbank:
     def runDownload(self):
         """ start download TPbank Transaction """
         self.loginBIDVbank()
+        
+        first_login_element = '/html/body/div/div[1]/div[2]/div/div[1]/div[3]/div[1]/div/div/div[1]/div/div[2]/a/span'
+        if self.loadCompleted(first_login_element,2000000):
+            self.clickElement('/html/body/div[1]/div[1]/div[2]/div/div[1]/div[3]/div[1]/div/div/div[1]/div/div[2]/a/span')
+
         print("login success")
 
         xpath_element = '/html/body/div/div[1]/div[2]/div/app-tai-khoan/div/div[2]/div/div/div/div/div[2]/div/ul/li/div/a/div/div[2]/div[2]'
@@ -163,8 +166,9 @@ class AutoDownloadBIDVbank:
         #     print(data)
         #     print('----------------------------------')
         # log_file.close()
-        time.sleep(1000)
-        self.driver.quit()
+        time.sleep(30)
+        self.runDownload()
+        # self.driver.quit()
 
     def isLoginError(self):
         xpath_element = '//*[@id="maincontent"]/ng-component/div[1]/div/div[3]/div/div/div/app-login-form/div/div/div[4]/p'
