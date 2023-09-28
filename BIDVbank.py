@@ -10,6 +10,11 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from winreg import *
+import requests, json, base64
+from urllib.request import urlopen
+import urllib
+from PIL import Image
+from io import BytesIO
 
 class AutoDownloadBIDVbank:
     def __init__(self, user_name, pass_word):
@@ -25,6 +30,55 @@ class AutoDownloadBIDVbank:
         self.driver.maximize_window()
 
         self.runDownload()
+    def Recognition(self):
+        try:
+            img_auth = self.driver.find_element(By.XPATH, '/html/body/div/div[1]/div[2]/div/div[2]/app-dang-nhap/div/div/div/form/div[2]/div[3]/div/app-captcha/div/div/div[2]/div/img')
+            location = img_auth.location
+            size = img_auth.size
+            
+            img = self.driver.get_screenshot_as_png()
+
+            left = location['x']
+            top = location['y']
+            right = location['x'] + size['width']
+            bottom = location['y'] + size['height']
+
+            im = Image.open(BytesIO(img))
+            im = im.crop((left, top, right, bottom)) # defines crop points
+            im.save('screenshot.png')
+
+            df = open('screenshot.png', 'rb').read()
+
+            imgStr = base64.b64encode(df).decode()
+
+            url = 'https://api.1stcaptcha.com/Recognition'
+            data = {
+                "Apikey": "df96cfbaada3488a977aa88df5c11b8d",
+                "Type": "imagetotext",
+                "Image": imgStr,
+            }
+            header = {
+                "Content-Type": "application/json"
+            }
+            req = requests.post(url, data=json.dumps(data), headers=header)
+            req_json = req.json()
+            print(req_json)
+
+            # text = json.loads(req_json)
+            print(req_json['TaskId'])
+
+            self.getresult(str(req_json['TaskId']))
+        except:
+            print("error")
+
+    def getresult(self, orderId):
+        url = 'https://api.1stcaptcha.com/getresult?apikey=df96cfbaada3488a977aa88df5c11b8d&taskid='+orderId
+        get_json = requests.get(url).json()
+        print(get_json['Data'])
+
+        image_auth = self.driver.find_element(By.XPATH,'/html/body/div/div[1]/div[2]/div/div[2]/app-dang-nhap/div/div/div/form/div[2]/div[3]/div/app-captcha/div/div/div[1]/div/div/input')
+        image_auth.clear()
+        image_auth.send_keys(get_json['Data'])
 
     def timeoutToken(self,):
         while True:
@@ -83,11 +137,15 @@ class AutoDownloadBIDVbank:
 
             user.send_keys(self.user_name)
             password.send_keys(self.pass_word)
-            # captcha_input.send_keys(captcha)
-            #button.click()
-
-            #first login...
             
+            self.Recognition()
+            
+            
+            if self.loadCompleted('/html/body/div/div[1]/div[2]/div/div[2]/app-dang-nhap/div/div/div/form/div[2]/div[4]/button',20):
+                self.clickElement('/html/body/div/div[1]/div[2]/div/div[2]/app-dang-nhap/div/div/div/form/div[2]/div[4]/button')
+
+            if self.loadCompleted('/html/body/ngb-modal-window/div/div/ng-component/div/div[3]/div/div',20):
+                self.loginBIDVbank()
                 
         except TimeoutException:
             print("Login TPbank timeout")
